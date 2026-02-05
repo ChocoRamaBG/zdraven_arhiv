@@ -1,0 +1,33 @@
+name: Zdraven Arhiv Scraper 🏥
+
+on:
+  workflow_dispatch: # Позволява ръчно пускане от бутон "Run workflow"
+
+jobs:
+  scrape-doctors:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repo content
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Scraper 🚀
+        run: python scraper.py
+
+      - name: Upload Excel Artifact 💾
+        if: always() # Качва файла дори ако скриптът гръмне по средата
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctors-data
+          path: zdraven_arhiv_data.xlsx
+          retention-days: 5
