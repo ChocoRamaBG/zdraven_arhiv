@@ -12,7 +12,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 
 # --- 📁 ДИНАМИЧЕН ПЪТ ---
-# В GitHub Actions файловете се записват в работната директория
 script_dir = os.getcwd()
 print(f"📂 Работна папка: {script_dir}")
 
@@ -21,13 +20,11 @@ print(f"🎯 Базата данни: {output_filename}")
 
 # --- ⚙️ НАСТРОЙКИ НА БРАУЗЪРА ЗА CLOUD ---
 options = Options()
-# ВАЖНО: Задължителни настройки за GitHub Actions (Headless Linux)
 options.add_argument('--headless=new') 
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 options.add_argument('--disable-gpu')
 options.add_argument('--window-size=1920,1080')
-# Слагаме User-Agent, за да не ни мислят за робот
 options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
 # --- 🚗 СТАРТИРАНЕ НА ДРАЙВЪРЧОВЦИ ---
@@ -37,7 +34,7 @@ try:
     driver = webdriver.Chrome(service=service, options=options)
     print("✅ Драйвърът зареди. Cloud Ninja Mode.")
 except Exception as e:
-    print(f"💥 Грешка при стартиране: {e}")
+    print(f"💥 What the fuck? Грешка при стартиране: {e}")
     raise e
 
 # --- 💾 ЗАПИСВАЧКАТА ---
@@ -59,20 +56,21 @@ def save_single_record(record):
         final_df.to_excel(output_filename, index=False)
         print(f"💾 Saved: {record.get('Име')}")
     except Exception as e:
-        print(f"❌ ERROR saving: {e}")
+        print(f"❌ HELL ERROR saving: {e}")
 
 # --- 🕵️‍♂️ AGENT 007: PROFILE SCRAPER ---
 def scrape_inner_profile(url, basic_info):
+    # Малко логорея да има, да се знае, че работим
     print(f"   👉 Visiting: {url}")
     try:
         driver.get(url)
-        time.sleep(1) # По-малко чакане за cloud, там нетът е бърз
+        time.sleep(1) 
         
         try:
             WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, "elementor-heading-title")))
         except: pass
 
-        # 1. ТЕЛЕФОНИ
+        # 1. ТЕЛЕФОНЧОВЦИ
         phones = []
         try:
             phone_widgets = driver.find_elements(By.XPATH, "//div[contains(@class, 'elementor-widget-icon-box')]//i[contains(@class, 'fa-phone-alt')]/ancestor::div[contains(@class, 'elementor-widget-icon-box')]//h3")
@@ -86,7 +84,7 @@ def scrape_inner_profile(url, basic_info):
                 for l in links: phones.append(l.text.strip())
             except: pass
 
-        # 2. ИМЕЙЛИ
+        # 2. ИМЕЙЛЧОВЦИ
         emails = []
         try:
             email_widgets = driver.find_elements(By.XPATH, "//div[contains(@class, 'elementor-widget-icon-box')]//i[contains(@class, 'fa-mail-bulk')]/ancestor::div[contains(@class, 'elementor-widget-icon-box')]//h3")
@@ -161,31 +159,41 @@ def scrape_inner_profile(url, basic_info):
     
     return basic_info
 
-# --- 📜 MAIN LOOP ---
+# --- 📜 MAIN LOOP (SIGMA GRINDSET EDITION) ---
 page = 1
-max_pages = 344 
+# max_pages... малини и къпини, все тая. Махаме го. 
+# Сега сме на "while True" mode, no cap.
 
 print("🚀 Стартиране на Scraping процеса...")
 
 try:
-    while page <= max_pages:
+    while True: # Infinite loop maxxing
         if page == 1:
             target_url = "https://zdraven-arhiv.com/doctors/"
         else:
             target_url = f"https://zdraven-arhiv.com/doctors/page/{page}/"
             
-        print(f"\n📄 --- СТРАНИЦА {page} от {max_pages} ---")
+        print(f"\n📄 --- СТРАНИЦА {page} (докато свят светува) ---")
         driver.get(target_url)
         
         try:
-            WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, "jet-listing-grid__item")))
+            # Чакаме малко елементчовци да заредят
+            # Намалих timeout-а малко, че да не висим като прани гащи
+            wait_time = 10 if page == 1 else 5
+            try:
+                WebDriverWait(driver, wait_time).until(EC.presence_of_element_located((By.CLASS_NAME, "jet-listing-grid__item")))
+            except:
+                # Ако timeout-не, вероятно няма елементи, но проверката долу ще го хване
+                pass
+
             cards = driver.find_elements(By.XPATH, "//div[contains(@class, 'jet-listing-grid__item')]")
             
+            # ТОВА Е ВАЖНОТО, ЛЬОЛЬО:
             if not cards:
-                print("⛔ Край на мача.")
-                break
+                print("⛔ Няма повече доктори. Край на мача. Game Over.")
+                break # <-- Ето тук спираме цикъла
 
-            print(f"🔎 Намерих {len(cards)} доктори.")
+            print(f"🔎 Намерих {len(cards)} доктори. Lets gooo.")
             
             doctors_on_page = []
             for card in cards:
@@ -220,7 +228,14 @@ try:
             page += 1
             
         except Exception as e:
+            # Ако гръмне нещо генерално, може би е 404
             print(f"🤬 ГРЕШКА на страница {page}: {e}")
+            # Проверяваме дали не сме набили 404 страница
+            if "404" in driver.title or "Страницата не е намерена" in driver.page_source:
+                 print("⛔ Уцелихме 404. Спирам.")
+                 break
+            
+            # Иначе пробваме следващата, барем стане нещо
             page += 1
             continue
 
@@ -229,4 +244,4 @@ finally:
         driver.quit()
         print("🛑 Спрях колата.")
     except: pass
-    print(f"\n🏁 Финито!")
+    print(f"\n🏁 Финито! (Приключихме на страница {page})")
