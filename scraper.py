@@ -21,7 +21,10 @@ print(f"🎯 Базата данни: {output_filename}")
 
 # --- ⚙️ НАСТРОЙКИ НА БРАУЗЪРА ---
 options = Options()
-# options.add_argument('--headless=new') # Пусни го да гледаш сеира ако искаш, иначе го остави headless
+
+# 👇 ТОВА ТРЯБВА ДА Е ВКЛЮЧЕНО, ЩОМ СИ НА СЪРВЪР, ЛЬОЛЬО!
+options.add_argument('--headless=new') 
+
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 options.add_argument('--disable-gpu')
