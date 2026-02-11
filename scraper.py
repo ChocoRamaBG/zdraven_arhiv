@@ -165,7 +165,7 @@ try:
         if page == 1:
             target_url = "https://zdraven-arhiv.com/doctors/"
         else:
-            target_url = f"https://zdraven-arhiv.com/doctors/page/{page}/"
+            target_url = f"https://zdraven-arhiv.com/doctors/?jsf=jet-engine&pagenum={page}"
             
         print(f"\n📄 --- СТРАНИЦА {page} ---")
         driver.get(target_url)
