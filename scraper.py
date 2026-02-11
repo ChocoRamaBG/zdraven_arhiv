@@ -16,15 +16,13 @@ from selenium.webdriver.chrome.options import Options
 script_dir = os.getcwd()
 print(f"📂 Работна папка: {script_dir}")
 
-output_filename = os.path.join(script_dir, "zdraven_arhiv_data_fixed.xlsx")
+# Оправих името да е по-нормално, да не се бъркат файлчовците
+output_filename = os.path.join(script_dir, "zdraven_arhiv_data.xlsx")
 print(f"🎯 Базата данни: {output_filename}")
 
 # --- ⚙️ НАСТРОЙКИ НА БРАУЗЪРА ---
 options = Options()
-
-# 👇 ТОВА ТРЯБВА ДА Е ВКЛЮЧЕНО, ЩОМ СИ НА СЪРВЪР, ЛЬОЛЬО!
 options.add_argument('--headless=new') 
-
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 options.add_argument('--disable-gpu')
@@ -67,50 +65,37 @@ def scrape_inner_profile(url, basic_info):
     print(f"   👉 Visiting: {url}")
     try:
         driver.get(url)
-        # Чакаме малко, да не получим 429 като някой аматьор
         time.sleep(1.5) 
         
-        # Чакаме основния контейнер
         try:
             WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, "elementor-widget-icon-box")))
         except: pass
 
-        # --- СЪБИРАНЕ НА ВСИЧКИ ИКОН-БОКСЧОВЦИ ---
-        # Вместо да гадаем иконите, дърпаме всички текстове от кутийките
-        # и ги сортираме с regex. Това е *Gyatt level logic*.
-        
         phones = []
         emails = []
         possible_addresses = []
         
         try:
-            # Търсим всички заглавия в icon boxes
             box_titles = driver.find_elements(By.CSS_SELECTOR, ".elementor-widget-icon-box .elementor-icon-box-title span")
             
             for title_el in box_titles:
                 text = title_el.text.strip()
                 if not text: continue
                 
-                # Regex Logic - Brainrot style
-                # Ако има @ - имейл
                 if "@" in text:
                     if text not in emails: emails.append(text)
-                # Ако има цифри и е сравнително кратко - телефон
                 elif re.search(r"(\+359|08[789]|02)", text) and len(text) < 20:
                     if text not in phones: phones.append(text)
-                # Всичко останало, което е дълго, вероятно е адрес (или глупости)
                 elif len(text) > 10:
                     if text not in possible_addresses: possible_addresses.append(text)
                     
         except Exception as e:
             print(f"⚠️ Warning: Не мога да парсна боксчовците. {e}")
 
-        # --- АДРЕС ОТ GOOGLE MAPS IFRAME (Най-сигурното, Гащник) ---
         map_pin_address = "-"
         clickable_map_link = "-"
         
         try:
-            # Търсим iframe-а по по-умен начин
             iframe = driver.find_element(By.CSS_SELECTOR, "iframe[src*='maps.google.com']")
             raw_address = iframe.get_attribute("title") or iframe.get_attribute("aria-label")
             
@@ -121,18 +106,14 @@ def scrape_inner_profile(url, basic_info):
         except: 
             pass
 
-        # Ако нямаме адрес от картите, взимаме първия възможен текст от кутийките
         text_address = map_pin_address if map_pin_address != "-" else (possible_addresses[0] if possible_addresses else "-")
 
-        # --- БИОГРАФИЯ ---
         full_bio = "-"
         try:
-            # Взимаме текста от главното описание
             bio_el = driver.find_element(By.XPATH, "//div[contains(@class, 'jet-listing-dynamic-field__content')]")
             full_bio = bio_el.get_attribute("innerText").strip().replace('\n', ' || ')
         except: pass
 
-        # --- BREADCRUMB ---
         breadcrumb_info = "-"
         try:
             breadcrumb_el = driver.find_element(By.ID, "breadcrumbs")
@@ -156,7 +137,7 @@ def scrape_inner_profile(url, basic_info):
     
     return basic_info
 
-# --- 📜 MAIN LOOP (SIGMA GRINDSET EDITION) ---
+# --- 📜 MAIN LOOP ---
 page = 1
 print("🚀 Стартиране на Scraping процеса...")
 
@@ -171,7 +152,6 @@ try:
         driver.get(target_url)
         
         try:
-            # Проверка за 404 - ако няма такава страница, бием шута
             if "404" in driver.title or "Страницата не е намерена" in driver.page_source:
                  print("⛔ Уцелихме 404. Край на играта, льольо.")
                  break
@@ -195,13 +175,12 @@ try:
                     url = link_el.get_attribute("href")
                     name = link_el.text.strip()
                     
-                    # Малко safe check
                     if not url: continue
                     
                     doc_data = {
                         "Име": name,
                         "URL": url,
-                        "Описание (Лист)": "-" # Мързи ме да го дърпам отвън, ще го вземем отвътре
+                        "Описание (Лист)": "-" 
                     }
                     doctors_on_page.append(doc_data)
                 except: continue
@@ -221,4 +200,4 @@ finally:
         driver.quit()
         print("🛑 Спрях колата.")
     except: pass
-    print(f"\n🏁 Финито! Андбиул морков coding session finished.")
+    print(f"\n🏁 Финито! Андибул морков coding session finished.")
