@@ -1,7 +1,13 @@
 name: Zdraven Arhiv Scraper 🏥
 
 on:
-  workflow_dispatch: # Позволява ръчно пускане от бутон "Run workflow"
+  workflow_dispatch: 
+  # schedule: # Ако искаш да се пуска сам всеки ден в 2 през нощта, махни коментара долу
+  #   - cron: '0 2 * * *'
+
+# 👇 ТОВА Е ВАЖНО, ЛЬОЛЬО! Даваме права за писане!
+permissions:
+  contents: write
 
 jobs:
   scrape-doctors:
@@ -22,12 +28,16 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Scraper 🚀
+        # Скриптът ще създаде zdraven_arhiv_data.xlsx
         run: python scraper.py
 
-      - name: Upload Excel Artifact 💾
-        if: always() # Качва файла дори ако скриптът гръмне по средата
-        uses: actions/upload-artifact@v4
-        with:
-          name: doctors-data
-          path: zdraven_arhiv_data.xlsx
-          retention-days: 5
+      # 👇 ЕТО ГО МАГИЧЕСКИЯТ ТРИК ЗА GIT PUSH
+      - name: Commit and Push Data 💾
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          # Добавяме всички excel файлчовци
+          git add *.xlsx
+          # Ако няма промени, не гърми, а просто кажи "няма нищо ново"
+          git commit -m "Auto-update database: $(date)" || echo "No changes to commit"
+          git push
